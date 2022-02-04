@@ -42,10 +42,10 @@ class GreetingContoller {
 
   @MessageMapping("greetings")
   Flux<GreetingResponse> greetings(
-    //GreetingRequest request,
-    RSocketRequester requester, @AuthenticationPrincipal Mono<UserDetails> user
+    GreetingRequest request,
+    RSocketRequester requester,
+    @AuthenticationPrincipal Mono<UserDetails> user
   ) {
-
     var healthFlux = requester
       .route("health")
       .retrieveFlux(ClientHealthSnap.class)
@@ -57,19 +57,22 @@ class GreetingContoller {
       )
       .filter(h -> !h.isHealthy());
 
-      var out = user.map(userDetails -> userDetails.getUsername())
-              .flatMapMany(username -> Flux
-                      .fromStream(
-                              Stream.generate(
-                                      () ->
-                                              new GreetingResponse(
-                                                      "Hello " + username + " @ " + Instant.now()
-                                              )
-                              )
-                      )
-                      .take(100)
-                      .delayElements(Duration.ofSeconds(1)));
-
+    var out = user
+      .map(userDetails -> userDetails.getUsername())
+      .flatMapMany(
+        username ->
+          Flux
+            .fromStream(
+              Stream.generate(
+                () ->
+                  new GreetingResponse(
+                    request.getName() + " " + username + " @ " + Instant.now()
+                  )
+              )
+            )
+            .take(100)
+            .delayElements(Duration.ofSeconds(1))
+      );
 
     /*var out = Flux
       .fromStream(
@@ -88,46 +91,45 @@ class GreetingContoller {
   }
 }
 
-
 @Configuration
-class SecurityConfiguration 
-{
-	@Bean
-    MapReactiveUserDetailsService uds()
-	{
-        UserDetails defaultUser =
-                User
-                .withDefaultPasswordEncoder()
-                .password("password")
-                .username("neo")
-                .roles("ADMIN","USER")
-                .build();
-        MapReactiveUserDetailsService uds = new MapReactiveUserDetailsService(defaultUser);
-		return uds;
-	}
+class SecurityConfiguration {
 
-	@Bean
-	PayloadSocketAcceptorInterceptor authorization(RSocketSecurity rsecurity)
-    {
-        return rsecurity
-                .authorizePayload(ap -> ap.anyExchange().authenticated())
-                .simpleAuthentication(Customizer.withDefaults())
-                .build();
+  @Bean
+  MapReactiveUserDetailsService uds() {
+    UserDetails defaultUser = User
+      .withDefaultPasswordEncoder()
+      .password("password")
+      .username("neo")
+      .roles("ADMIN", "USER")
+      .build();
+    MapReactiveUserDetailsService uds = new MapReactiveUserDetailsService(
+      defaultUser
+    );
+    return uds;
+  }
 
-    }
+  @Bean
+  PayloadSocketAcceptorInterceptor authorization(RSocketSecurity rsecurity) {
+    return rsecurity
+      .authorizePayload(ap -> ap.anyExchange().authenticated())
+      .simpleAuthentication(Customizer.withDefaults())
+      .build();
+  }
 
-    @Bean
-    RSocketMessageHandler rSocketMessageHandler(RSocketStrategies strategies)
-    {
-        var rsmh = new RSocketMessageHandler();
-        rsmh.getArgumentResolverConfigurer().addCustomResolver(new AuthenticationPrincipalArgumentResolver());
-        rsmh.setRSocketStrategies(strategies);
-        return rsmh;
-    }
+  /**
+   * To use annotated responders on the server side, add RSocketMessageHandler to your Spring
+   * configuration to detect @Controller beans with @MessageMapping and @ConnectMapping methods
+   */
+  @Bean
+  RSocketMessageHandler rSocketMessageHandler(RSocketStrategies strategies) {
+    var rsmh = new RSocketMessageHandler();
+    rsmh
+      .getArgumentResolverConfigurer()
+      .addCustomResolver(new AuthenticationPrincipalArgumentResolver());
+    rsmh.setRSocketStrategies(strategies);
+    return rsmh;
+  }
 }
-
-
-
 
 @Data
 @AllArgsConstructor

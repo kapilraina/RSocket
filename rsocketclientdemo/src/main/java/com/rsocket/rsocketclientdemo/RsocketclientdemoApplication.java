@@ -54,6 +54,9 @@ public class RsocketclientdemoApplication {
     //return RSocketMessageHandler.responder(strategies);
   }
 
+  /**
+   * RSocketRequester provides a builder that helps to prepare an io.rsocket.core.RSocketConnector including connection settings for the SETUP frame.
+   */
   @Bean
   RSocketRequester rSocketRequester(
     RSocketRequester.Builder builder,
@@ -61,7 +64,10 @@ public class RsocketclientdemoApplication {
   ) {
     return builder
       .setupMetadata(this.creds, this.credMimeType)
-      .rsocketConnector(configurer -> configurer.acceptor(socketAcceptor))
+      //.dataMimeType(mimeType)
+      //.metadataMimeType(mimeType)
+      //.rsocketStrategies(strategies)
+      .rsocketConnector(connector -> connector.acceptor(socketAcceptor))
       .tcp("localhost", 8888);
   }
 
@@ -78,7 +84,8 @@ public class RsocketclientdemoApplication {
       Flux<GreetingResponse> retrieveFlux = requester
         .route("greetings")
         //.metadata(this.creds, this.credMimeType); //set in requester setup
-        // .data(new GreetingRequest("Ruhaaan"))
+        .data(new GreetingRequest("Konichiva"))
+        //.data(new GreetingRequest("こんにちは"), GreetingRequest.class)
         .retrieveFlux(GreetingResponse.class);
       retrieveFlux.subscribe(System.out::println);
     };
