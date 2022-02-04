@@ -1,11 +1,10 @@
 package com.rsocket.rsocketclientdemo;
 
 import io.rsocket.SocketAcceptor;
+import io.rsocket.metadata.WellKnownMimeType;
 import java.time.Duration;
 import java.util.Random;
 import java.util.stream.Stream;
-
-import io.rsocket.metadata.WellKnownMimeType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,13 +34,16 @@ public class RsocketclientdemoApplication {
   public static void main(String[] args) {
     SpringApplication.run(RsocketclientdemoApplication.class, args);
     System.in.read();
-
   }
 
-  final UsernamePasswordMetadata creds = new UsernamePasswordMetadata("neo","password");
+  final UsernamePasswordMetadata creds = new UsernamePasswordMetadata(
+    "neo",
+    "password"
+  );
 
-  final MimeType credMimeType = MimeTypeUtils
-          .parseMimeType(WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION.toString());
+  final MimeType credMimeType = MimeTypeUtils.parseMimeType(
+    WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION.toString()
+  );
 
   @Bean
   SocketAcceptor socketAcceptor(
@@ -49,6 +51,7 @@ public class RsocketclientdemoApplication {
     HealtController controller
   ) {
     return RSocketMessageHandler.responder(strategies, controller);
+    //return RSocketMessageHandler.responder(strategies);
   }
 
   @Bean
